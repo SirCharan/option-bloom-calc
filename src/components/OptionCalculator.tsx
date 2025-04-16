@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { Calculator, Clock, Calendar, Info, Sparkles } from "lucide-react";
@@ -34,16 +33,9 @@ import {
   dateToTimeToExpiry,
   durationToTimeToExpiry,
 } from "@/utils/blackScholes";
+import { greekDescriptions } from "@/utils/greekDescriptions";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
-
-const greekDescriptions = {
-  delta: "Change in option price for a $1 change in the underlying price.",
-  gamma: "Rate of change of Delta with respect to the underlying price.",
-  theta: "Change in option price per day passing (time decay).",
-  vega: "Change in option price for a 1% change in volatility.",
-  rho: "Change in option price for a 1% change in interest rate."
-};
 
 export const OptionCalculator = () => {
   const isMobile = useIsMobile();
@@ -217,6 +209,7 @@ export const OptionCalculator = () => {
                     type="number"
                     step="0.01"
                     min="0.01"
+                    max="1000000"
                     value={spotPrice}
                     onChange={(e) => 
                       handleNumericInput(e.target.value, setSpotPrice, 0.01)
@@ -235,6 +228,7 @@ export const OptionCalculator = () => {
                     type="number"
                     step="0.01"
                     min="0.01"
+                    max="1000000"
                     value={strikePrice}
                     onChange={(e) => 
                       handleNumericInput(e.target.value, setStrikePrice, 0.01)
@@ -525,12 +519,14 @@ export const OptionCalculator = () => {
               <div className="space-y-3">
                 {Object.entries(greeks).map(([key, value]) => (
                   <div key={key} className="flex justify-between items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-medium capitalize">{key}</span>
+                    <div className="flex items-center gap-2">
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-groww-blue transition-colors duration-200 cursor-pointer" />
+                            <div className="flex items-center gap-2 cursor-help">
+                              <span className="text-sm font-medium capitalize">{key}</span>
+                              <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-groww-blue transition-colors duration-200" />
+                            </div>
                           </TooltipTrigger>
                           <TooltipContent side={isMobile ? "top" : "right"} className="animate-scale">
                             <p className="max-w-xs text-xs">
