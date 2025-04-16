@@ -26,12 +26,26 @@ export const PayoffGraph: React.FC<PayoffGraphProps> = ({
   // Generate data points for the graph
   const generateData = () => {
     const data = [];
-    // Extend the range to show more of the payoff curve
-    const minPrice = Math.max(0, strikePrice - spotPrice * 0.75);
-    const maxPrice = strikePrice + spotPrice * 0.75;
-    const step = (maxPrice - minPrice) / 100; // Increase data points for smoother curves
+    
+    // Simple price range calculation - 30% on either side
+    const priceRange = spotPrice * 0.3;
+    const minPrice = Math.max(0, spotPrice - priceRange);
+    const maxPrice = spotPrice + priceRange;
+    
+    // Simplified step size calculation
+    let stepSize;
+    if (spotPrice > 10000) {       // BTC range
+      stepSize = 250;              // $250 steps
+    } else if (spotPrice > 1000) { // ETH range
+      stepSize = 25;              // $25 steps
+    } else if (spotPrice > 100) {  // SOL, MATIC range
+      stepSize = 5;               // $5 steps
+    } else {                       // Low-price assets
+      stepSize = 1;               // $1 step
+    }
 
-    for (let price = minPrice; price <= maxPrice; price += step) {
+    // Generate base points
+    for (let price = minPrice; price <= maxPrice; price += stepSize) {
       let buyerPayoff = 0;
       let sellerPayoff = 0;
 
@@ -55,18 +69,29 @@ export const PayoffGraph: React.FC<PayoffGraphProps> = ({
 
   const data = generateData();
 
+  // Simplified number formatting
+  const formatValue = (value: number) => {
+    if (Math.abs(value) >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    } else if (Math.abs(value) >= 1000) {
+      return `$${(value / 1000).toFixed(1)}K`;
+    } else {
+      return `$${value.toFixed(2)}`;
+    }
+  };
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3 rounded-lg shadow-lg">
           <p className="text-gray-600 dark:text-gray-300 font-medium mb-2 text-xs sm:text-sm">
-            Asset Price: ${Number(label).toLocaleString()}
+            Asset Price: {formatValue(label)}
           </p>
           <p className="text-emerald-600 font-medium mb-1 text-xs sm:text-sm">
-            Buyer Payoff: ${payload[0].value.toLocaleString()}
+            Buyer Payoff: {formatValue(payload[0].value)}
           </p>
           <p className="text-red-600 font-medium text-xs sm:text-sm">
-            Seller Payoff: ${payload[1].value.toLocaleString()}
+            Seller Payoff: {formatValue(payload[1].value)}
           </p>
         </div>
       );
@@ -80,12 +105,18 @@ export const PayoffGraph: React.FC<PayoffGraphProps> = ({
         data={data}
         margin={{
           top: 10,
-          right: 10,
-          left: 10,
+          right: 30,
+          left: 30,
           bottom: 10,
         }}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
+        <CartesianGrid 
+          strokeDasharray="3 3" 
+          stroke="hsl(var(--muted-foreground))" 
+          opacity={0.2} 
+          horizontal={true}
+          vertical={true}
+        />
         <XAxis 
           dataKey="price" 
           label={{ 
@@ -95,13 +126,19 @@ export const PayoffGraph: React.FC<PayoffGraphProps> = ({
             style: { 
               textAnchor: 'middle',
               fontSize: '12px',
-              fill: '#6B7280'
+              fill: 'hsl(var(--muted-foreground))'
             }
           }}
-          tickFormatter={(value) => `$${value}`}
-          stroke="#6B7280"
+          tickFormatter={formatValue}
+          stroke="hsl(var(--muted-foreground))"
           tick={{ fontSize: 11 }}
           tickMargin={5}
+          axisLine={{ stroke: 'hsl(var(--muted-foreground))', opacity: 0.3 }}
+          interval="preserveStartEnd"
+          ticks={data
+            .filter((_, index) => index % Math.ceil(data.length / 10) === 0)
+            .map(item => item.price)
+          }
         />
         <YAxis 
           label={{ 
@@ -112,17 +149,19 @@ export const PayoffGraph: React.FC<PayoffGraphProps> = ({
             style: { 
               textAnchor: 'middle',
               fontSize: '12px',
-              fill: '#6B7280'
+              fill: 'hsl(var(--muted-foreground))'
             }
           }}
-          tickFormatter={(value) => `$${value}`}
-          stroke="#6B7280"
+          tickFormatter={formatValue}
+          stroke="hsl(var(--muted-foreground))"
           tick={{ fontSize: 11 }}
           tickMargin={5}
+          axisLine={{ stroke: 'hsl(var(--muted-foreground))', opacity: 0.3 }}
+          interval="preserveStartEnd"
         />
         <Tooltip 
           content={<CustomTooltip />}
-          cursor={{ stroke: '#6B7280', strokeWidth: 1 }}
+          cursor={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1, opacity: 0.3 }}
         />
         <Legend 
           verticalAlign="top" 
@@ -135,20 +174,21 @@ export const PayoffGraph: React.FC<PayoffGraphProps> = ({
         <Line
           type="monotone"
           dataKey="buyerPayoff"
-          stroke="#22c55e"
+          stroke="hsl(var(--primary))"
           name="Buyer Payoff"
           dot={false}
           strokeWidth={2}
-          activeDot={{ r: 6, stroke: '#15803d', strokeWidth: 2 }}
+          activeDot={{ r: 6, stroke: 'hsl(var(--primary))', strokeWidth: 2 }}
         />
         <Line
           type="monotone"
           dataKey="sellerPayoff"
-          stroke="#ef4444"
+          stroke="hsl(var(--destructive))"
           name="Seller Payoff"
           dot={false}
           strokeWidth={2}
-          activeDot={{ r: 6, stroke: '#b91c1c', strokeWidth: 2 }}
+          strokeDasharray="5 5"
+          activeDot={{ r: 6, stroke: 'hsl(var(--destructive))', strokeWidth: 2 }}
         />
       </LineChart>
     </ResponsiveContainer>
