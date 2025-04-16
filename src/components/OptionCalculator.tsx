@@ -36,15 +36,17 @@ import {
 import { greekDescriptions } from "@/utils/greekDescriptions";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PayoffGraph } from './PayoffGraph';
 
 export const OptionCalculator = () => {
   const isMobile = useIsMobile();
   
   // Form state
+  const [selectedAsset, setSelectedAsset] = useState<"SELECT" | "BTC" | "ETH" | "SOL" | "ADA" | "MATIC" | "BASE" | "ARB">("SELECT");
   const [spotPrice, setSpotPrice] = useState<number>(100);
   const [strikePrice, setStrikePrice] = useState<number>(100);
   const [volatility, setVolatility] = useState<number>(30);
-  const [riskFreeRate, setRiskFreeRate] = useState<number>(5);
+  const [riskFreeRate, setRiskFreeRate] = useState<number>(0);
   const [optionType, setOptionType] = useState<"call" | "put">("call");
   const [timeMethod, setTimeMethod] = useState<"date" | "duration">("date");
   
@@ -74,6 +76,82 @@ export const OptionCalculator = () => {
   
   // Animation states
   const [animatePremium, setAnimatePremium] = useState(false);
+  
+  // Get CoinGecko ID for asset
+  const getAssetId = (asset: string) => {
+    const assetMap: { [key: string]: string } = {
+      BTC: "bitcoin",
+      ETH: "ethereum",
+      SOL: "solana",
+      ADA: "cardano",
+      MATIC: "matic-network",
+      BASE: "coinbase-wrapped-staked-eth",
+      ARB: "arbitrum"
+    };
+    return assetMap[asset];
+  };
+
+  // Get display name for asset
+  const getAssetDisplayName = (asset: string) => {
+    const displayNames: { [key: string]: string } = {
+      BTC: "Bitcoin (BTC)",
+      ETH: "Ethereum (ETH)",
+      SOL: "Solana (SOL)",
+      ADA: "Cardano (ADA)",
+      MATIC: "Polygon (MATIC)",
+      BASE: "Base (BASE)",
+      ARB: "Arbitrum (ARB)"
+    };
+    return displayNames[asset];
+  };
+
+  // Fetch price from CoinGecko
+  const fetchAssetPrice = async (asset: string) => {
+    try {
+      const assetId = getAssetId(asset);
+      console.log('Fetching price for:', assetId);
+      
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${assetId}&vs_currencies=usd`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+          }
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', errorText);
+        throw new Error(`Failed to fetch price: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Received data:', data);
+      
+      if (!data[assetId]?.usd) {
+        throw new Error('Invalid price data received');
+      }
+      
+      const price = data[assetId].usd;
+      console.log('Setting new price:', price);
+      setSpotPrice(price);
+      setStrikePrice(price); // Set strike price equal to spot price
+      toast.success(`Updated ${getAssetDisplayName(asset)} price to $${price.toLocaleString()}`);
+    } catch (error) {
+      console.error('Error fetching price:', error);
+      toast.error(`Failed to fetch ${asset} price: ${error.message}`);
+    }
+  };
+
+  // Update price when asset changes
+  useEffect(() => {
+    console.log('Asset changed to:', selectedAsset);
+    if (selectedAsset !== "SELECT") {
+      fetchAssetPrice(selectedAsset);
+    }
+  }, [selectedAsset]);
   
   // Handle calculations
   useEffect(() => {
@@ -199,6 +277,31 @@ export const OptionCalculator = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Asset Selector */}
+                <div className="option-input-group">
+                  <Label htmlFor="asset" className="option-label">
+                    Asset
+                  </Label>
+                  <Select
+                    value={selectedAsset}
+                    onValueChange={(value) => setSelectedAsset(value as typeof selectedAsset)}
+                  >
+                    <SelectTrigger className="transition-all duration-200 hover:border-groww-blue">
+                      <SelectValue placeholder="Select asset" />
+                    </SelectTrigger>
+                    <SelectContent className="animate-scale">
+                      <SelectItem value="SELECT">Select</SelectItem>
+                      <SelectItem value="BTC">Bitcoin (BTC)</SelectItem>
+                      <SelectItem value="ETH">Ethereum (ETH)</SelectItem>
+                      <SelectItem value="SOL">Solana (SOL)</SelectItem>
+                      <SelectItem value="ADA">Cardano (ADA)</SelectItem>
+                      <SelectItem value="MATIC">Polygon (MATIC)</SelectItem>
+                      <SelectItem value="BASE">Base (BASE)</SelectItem>
+                      <SelectItem value="ARB">Arbitrum (ARB)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 {/* Spot Price */}
                 <div className="option-input-group">
                   <Label htmlFor="spotPrice" className="option-label">
@@ -344,6 +447,101 @@ export const OptionCalculator = () => {
               <CardTitle className="text-base sm:text-lg">Time to Expiry</CardTitle>
             </CardHeader>
             <CardContent>
+              <div className="mb-4">
+                <Label className="option-label mb-2 block">Quick Select</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const date = new Date();
+                      date.setHours(date.getHours() + 1);
+                      setExpiryDate(date);
+                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
+                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
+                      setTimeMethod("date");
+                    }}
+                    className="transition-all duration-200 hover:border-groww-blue"
+                  >
+                    1 Hour
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const date = new Date();
+                      date.setDate(date.getDate() + 1);
+                      setExpiryDate(date);
+                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
+                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
+                      setTimeMethod("date");
+                    }}
+                    className="transition-all duration-200 hover:border-groww-blue"
+                  >
+                    1 Day
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const date = new Date();
+                      date.setDate(date.getDate() + 7);
+                      setExpiryDate(date);
+                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
+                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
+                      setTimeMethod("date");
+                    }}
+                    className="transition-all duration-200 hover:border-groww-blue"
+                  >
+                    1 Week
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const date = new Date();
+                      date.setMonth(date.getMonth() + 1);
+                      setExpiryDate(date);
+                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
+                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
+                      setTimeMethod("date");
+                    }}
+                    className="transition-all duration-200 hover:border-groww-blue"
+                  >
+                    1 Month
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const date = new Date();
+                      date.setMonth(date.getMonth() + 3);
+                      setExpiryDate(date);
+                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
+                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
+                      setTimeMethod("date");
+                    }}
+                    className="transition-all duration-200 hover:border-groww-blue"
+                  >
+                    3 Months
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const date = new Date();
+                      date.setFullYear(date.getFullYear() + 1);
+                      setExpiryDate(date);
+                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
+                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
+                      setTimeMethod("date");
+                    }}
+                    className="transition-all duration-200 hover:border-groww-blue"
+                  >
+                    1 Year
+                  </Button>
+                </div>
+              </div>
               <Tabs
                 defaultValue="date"
                 value={timeMethod}
@@ -508,6 +706,9 @@ export const OptionCalculator = () => {
               <p className="text-sm text-muted-foreground mt-1">
                 {optionType === "call" ? "Call" : "Put"} option price
               </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                ({(premium / spotPrice * 100).toFixed(2)}% of asset price)
+              </p>
             </CardContent>
           </Card>
           
@@ -545,6 +746,20 @@ export const OptionCalculator = () => {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="grecian-blur dark:shadow-lg">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-base sm:text-lg">Payoff Diagram</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PayoffGraph
+                spotPrice={spotPrice}
+                strikePrice={strikePrice}
+                premium={premium}
+                optionType={optionType}
+              />
             </CardContent>
           </Card>
         </div>
