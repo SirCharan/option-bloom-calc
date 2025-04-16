@@ -50,7 +50,7 @@ export const OptionCalculator = () => {
   const [selectedAsset, setSelectedAsset] = useState<"SELECT" | "BTC" | "ETH" | "SOL" | "ADA" | "MATIC" | "BASE" | "ARB">("SELECT");
   const [spotPrice, setSpotPrice] = useState<number>(100);
   const [strikePrice, setStrikePrice] = useState<number>(100);
-  const [volatility, setVolatility] = useState<number>(30);
+  const [volatility, setVolatility] = useState<number>(100);
   const [useDVOL, setUseDVOL] = useState<boolean>(false);
   const [dvolData, setDvolData] = useState<{ btc: number | null; eth: number | null }>({ btc: null, eth: null });
   const [dvolWs, setDvolWs] = useState<WebSocket | null>(null);
@@ -159,12 +159,7 @@ export const OptionCalculator = () => {
     if (selectedAsset !== "SELECT") {
       fetchAssetPrice(selectedAsset);
       if (!useDVOL) {
-        // Set default IV to 100 for assets other than BTC and ETH
-        if (selectedAsset !== 'BTC' && selectedAsset !== 'ETH') {
-          setVolatility(100);
-        } else {
-          setVolatility(0);
-        }
+        setVolatility(100); // Set to 100 instead of 0
       }
     }
   }, [selectedAsset]);
@@ -394,35 +389,35 @@ export const OptionCalculator = () => {
     <div className="w-full max-w-4xl mx-auto animate-fade-in p-4 sm:p-6">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-4 sm:mb-6">
         <div className="flex items-center gap-2">
-          <Calculator className="h-5 w-5 sm:h-6 sm:w-6 text-groww-blue" />
-          <h1 className="text-lg sm:text-2xl font-bold">Options Premium Calculator</h1>
+          <Calculator className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+          <h1 className="text-lg sm:text-2xl font-bold text-foreground">Options Premium Calculator</h1>
         </div>
         
         <div className="flex items-center gap-2 text-xs sm:text-sm">
-          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-groww-blue animate-pulse-slow" />
-          <span className="text-muted-foreground">Powered by Black-Scholes</span>
+          <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-primary animate-pulse-slow" />
+          <span className="text-muted-foreground">Powered by Black-Scholes, Built for Humans</span>
         </div>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
         {/* Input Section */}
         <div className="col-span-1 lg:col-span-2 space-y-4 md:space-y-6">
-          <Card className="grecian-blur dark:shadow-lg">
+          <Card className="grecian-blur">
             <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="text-base sm:text-lg">Option Parameters</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-semibold text-foreground">Option Parameters</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 {/* Asset Selector */}
                 <div className="option-input-group">
-                  <Label htmlFor="asset" className="option-label text-sm sm:text-base">
+                  <Label htmlFor="asset" className="option-label">
                     Asset
                   </Label>
                   <Select
                     value={selectedAsset}
                     onValueChange={(value) => setSelectedAsset(value as typeof selectedAsset)}
                   >
-                    <SelectTrigger className="transition-all duration-200 hover:border-groww-blue text-sm sm:text-base">
+                    <SelectTrigger className="transition-all duration-200 hover:border-primary text-sm sm:text-base">
                       <SelectValue placeholder="Select asset" />
                     </SelectTrigger>
                     <SelectContent className="animate-scale">
@@ -440,7 +435,7 @@ export const OptionCalculator = () => {
                 
                 {/* Spot Price */}
                 <div className="option-input-group">
-                  <Label htmlFor="spotPrice" className="option-label text-sm sm:text-base">
+                  <Label htmlFor="spotPrice" className="option-label">
                     Current Price ($)
                   </Label>
                   <Input
@@ -453,13 +448,13 @@ export const OptionCalculator = () => {
                     onChange={(e) => 
                       handleNumericInput(e.target.value, setSpotPrice, 0.01)
                     }
-                    className="text-sm sm:text-base transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
+                    className="text-sm sm:text-base transition-all duration-200 hover:border-primary focus:border-primary"
                   />
                 </div>
                 
                 {/* Strike Price */}
                 <div className="option-input-group">
-                  <Label htmlFor="strikePrice" className="option-label text-sm sm:text-base">
+                  <Label htmlFor="strikePrice" className="option-label">
                     Strike Price ($)
                   </Label>
                   <Input
@@ -472,13 +467,13 @@ export const OptionCalculator = () => {
                     onChange={(e) => 
                       handleNumericInput(e.target.value, setStrikePrice, 0.01)
                     }
-                    className="text-sm sm:text-base transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
+                    className="text-sm sm:text-base transition-all duration-200 hover:border-primary focus:border-primary"
                   />
                 </div>
                 
                 {/* Option Type */}
                 <div className="option-input-group">
-                  <Label className="option-label text-sm sm:text-base">Option Type</Label>
+                  <Label className="option-label">Option Type</Label>
                   <ToggleGroup
                     type="single"
                     value={optionType}
@@ -491,7 +486,7 @@ export const OptionCalculator = () => {
                       value="call" 
                       className={cn(
                         "transition-all duration-200 text-sm sm:text-base",
-                        optionType === "call" ? "bg-groww-blue text-white animate-scale" : ""
+                        optionType === "call" ? "bg-primary text-primary-foreground animate-scale" : ""
                       )}
                     >
                       Call
@@ -500,7 +495,7 @@ export const OptionCalculator = () => {
                       value="put"
                       className={cn(
                         "transition-all duration-200 text-sm sm:text-base",
-                        optionType === "put" ? "bg-groww-blue text-white animate-scale" : ""
+                        optionType === "put" ? "bg-primary text-primary-foreground animate-scale" : ""
                       )}
                     >
                       Put
@@ -512,13 +507,13 @@ export const OptionCalculator = () => {
                 <div className="option-input-group">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1">
-                      <Label htmlFor="volatility" className="option-label text-sm sm:text-base">
+                      <Label htmlFor="volatility" className="option-label">
                         Implied Volatility (%)
                       </Label>
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground hover:text-groww-blue transition-colors duration-200" />
+                            <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground hover:text-primary transition-colors duration-200" />
                           </TooltipTrigger>
                           <TooltipContent className="animate-scale">
                             <p className="max-w-xs text-xs">
@@ -544,7 +539,7 @@ export const OptionCalculator = () => {
                             value="on" 
                             className={cn(
                               "h-5 sm:h-6 px-2 text-xs",
-                              useDVOL ? "bg-groww-blue text-white" : ""
+                              useDVOL ? "bg-primary text-primary-foreground" : ""
                             )}
                           >
                             On
@@ -553,7 +548,7 @@ export const OptionCalculator = () => {
                             value="off"
                             className={cn(
                               "h-5 sm:h-6 px-2 text-xs",
-                              !useDVOL ? "bg-groww-blue text-white" : ""
+                              !useDVOL ? "bg-primary text-primary-foreground" : ""
                             )}
                           >
                             Off
@@ -567,16 +562,14 @@ export const OptionCalculator = () => {
                       id="volatility"
                       type="number"
                       step="any"
-                      value={volatility || ''}
+                      value={volatility}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === '') {
+                        if (value === '' || isNaN(parseFloat(value))) {
                           setVolatility(100);
                         } else {
                           const parsed = parseFloat(value);
-                          if (!isNaN(parsed)) {
-                            setVolatility(parsed);
-                          }
+                          setVolatility(parsed);
                         }
                       }}
                       disabled={useDVOL}
@@ -597,13 +590,13 @@ export const OptionCalculator = () => {
                 {/* Risk-Free Rate */}
                 <div className="option-input-group">
                   <div className="flex items-center gap-1">
-                    <Label htmlFor="riskFreeRate" className="option-label text-sm sm:text-base">
+                    <Label htmlFor="riskFreeRate" className="option-label">
                       Risk-Free Rate (%)
                     </Label>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground hover:text-groww-blue transition-colors duration-200" />
+                          <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground hover:text-primary transition-colors duration-200" />
                         </TooltipTrigger>
                         <TooltipContent className="animate-scale">
                           <p className="max-w-xs text-xs">
@@ -623,7 +616,7 @@ export const OptionCalculator = () => {
                     onChange={(e) => 
                       handleNumericInput(e.target.value, setRiskFreeRate)
                     }
-                    className="text-sm sm:text-base transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
+                    className="text-sm sm:text-base transition-all duration-200 hover:border-primary focus:border-primary"
                   />
                 </div>
               </div>
@@ -631,13 +624,13 @@ export const OptionCalculator = () => {
           </Card>
           
           {/* Time to Expiry Section */}
-          <Card className="grecian-blur dark:shadow-lg">
+          <Card className="grecian-blur">
             <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="text-base sm:text-lg">Time to Expiry</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-semibold text-foreground">Time to Expiry</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="mb-4">
-                <Label className="option-label mb-2 block text-sm sm:text-base">Quick Select</Label>
+                <Label className="option-label mb-2 block">Quick Select</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   <Button
                     variant="outline"
@@ -650,7 +643,7 @@ export const OptionCalculator = () => {
                       setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
                       setTimeMethod("date");
                     }}
-                    className="transition-all duration-200 hover:border-groww-blue text-xs sm:text-sm"
+                    className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Hour
                   </Button>
@@ -665,7 +658,7 @@ export const OptionCalculator = () => {
                       setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
                       setTimeMethod("date");
                     }}
-                    className="transition-all duration-200 hover:border-groww-blue text-xs sm:text-sm"
+                    className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Day
                   </Button>
@@ -680,7 +673,7 @@ export const OptionCalculator = () => {
                       setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
                       setTimeMethod("date");
                     }}
-                    className="transition-all duration-200 hover:border-groww-blue text-xs sm:text-sm"
+                    className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Week
                   </Button>
@@ -695,7 +688,7 @@ export const OptionCalculator = () => {
                       setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
                       setTimeMethod("date");
                     }}
-                    className="transition-all duration-200 hover:border-groww-blue text-xs sm:text-sm"
+                    className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Month
                   </Button>
@@ -710,7 +703,7 @@ export const OptionCalculator = () => {
                       setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
                       setTimeMethod("date");
                     }}
-                    className="transition-all duration-200 hover:border-groww-blue text-xs sm:text-sm"
+                    className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     3 Months
                   </Button>
@@ -725,7 +718,7 @@ export const OptionCalculator = () => {
                       setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
                       setTimeMethod("date");
                     }}
-                    className="transition-all duration-200 hover:border-groww-blue text-xs sm:text-sm"
+                    className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Year
                   </Button>
@@ -750,7 +743,7 @@ export const OptionCalculator = () => {
                 <TabsContent value="date" className="mt-0 animate-fade-in">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
-                      <Label htmlFor="expiryDate" className="option-label text-sm sm:text-base">
+                      <Label htmlFor="expiryDate" className="option-label">
                         Expiry Date
                       </Label>
                       <div className="mt-1.5">
@@ -758,7 +751,7 @@ export const OptionCalculator = () => {
                           <PopoverTrigger asChild>
                             <Button
                               variant="outline"
-                              className="w-full justify-start text-left font-normal transition-all duration-200 hover:border-groww-blue text-sm sm:text-base"
+                              className="w-full justify-start text-left font-normal transition-all duration-200 hover:border-primary text-sm sm:text-base"
                             >
                               <Calendar className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                               {expiryDate ? (
@@ -783,13 +776,13 @@ export const OptionCalculator = () => {
                     </div>
                     
                     <div>
-                      <Label className="option-label text-sm sm:text-base">Expiry Time</Label>
+                      <Label className="option-label">Expiry Time</Label>
                       <div className="grid grid-cols-2 gap-2 mt-1.5">
                         <Select
                           value={expiryHour}
                           onValueChange={setExpiryHour}
                         >
-                          <SelectTrigger className="transition-all duration-200 hover:border-groww-blue text-sm sm:text-base">
+                          <SelectTrigger className="transition-all duration-200 hover:border-primary text-sm sm:text-base">
                             <SelectValue placeholder="Hour" />
                           </SelectTrigger>
                           <SelectContent className="animate-scale">
@@ -805,7 +798,7 @@ export const OptionCalculator = () => {
                           value={expiryMinute}
                           onValueChange={setExpiryMinute}
                         >
-                          <SelectTrigger className="transition-all duration-200 hover:border-groww-blue text-sm sm:text-base">
+                          <SelectTrigger className="transition-all duration-200 hover:border-primary text-sm sm:text-base">
                             <SelectValue placeholder="Min" />
                           </SelectTrigger>
                           <SelectContent className="animate-scale">
@@ -824,7 +817,7 @@ export const OptionCalculator = () => {
                 <TabsContent value="duration" className="mt-0 animate-fade-in">
                   <div className="grid grid-cols-3 gap-3">
                     <div className="option-input-group">
-                      <Label htmlFor="hours" className="option-label text-sm sm:text-base">
+                      <Label htmlFor="hours" className="option-label">
                         Hours
                       </Label>
                       <Input
@@ -835,12 +828,12 @@ export const OptionCalculator = () => {
                         onChange={(e) => 
                           handleNumericInput(e.target.value, setHours)
                         }
-                        className="text-sm sm:text-base transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
+                        className="text-sm sm:text-base transition-all duration-200 hover:border-primary focus:border-primary"
                       />
                     </div>
                     
                     <div className="option-input-group">
-                      <Label htmlFor="minutes" className="option-label text-sm sm:text-base">
+                      <Label htmlFor="minutes" className="option-label">
                         Minutes
                       </Label>
                       <Input
@@ -852,12 +845,12 @@ export const OptionCalculator = () => {
                         onChange={(e) => 
                           handleNumericInput(e.target.value, setMinutes)
                         }
-                        className="text-sm sm:text-base transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
+                        className="text-sm sm:text-base transition-all duration-200 hover:border-primary focus:border-primary"
                       />
                     </div>
                     
                     <div className="option-input-group">
-                      <Label htmlFor="seconds" className="option-label text-sm sm:text-base">
+                      <Label htmlFor="seconds" className="option-label">
                         Seconds
                       </Label>
                       <Input
@@ -869,7 +862,7 @@ export const OptionCalculator = () => {
                         onChange={(e) => 
                           handleNumericInput(e.target.value, setSeconds)
                         }
-                        className="text-sm sm:text-base transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
+                        className="text-sm sm:text-base transition-all duration-200 hover:border-primary focus:border-primary"
                       />
                     </div>
                   </div>
@@ -881,13 +874,13 @@ export const OptionCalculator = () => {
         
         {/* Results Section */}
         <div className="col-span-1 space-y-4">
-          <Card className="grecian-blur dark:shadow-lg">
+          <Card className="grecian-blur">
             <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="text-base sm:text-lg">Option Premium</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-semibold text-foreground">Option Premium</CardTitle>
             </CardHeader>
             <CardContent>
               <div className={cn(
-                "text-xl sm:text-3xl font-bold text-groww-blue transition-all duration-200",
+                "text-xl sm:text-3xl font-bold text-primary transition-all duration-200",
                 animatePremium && "animate-scale"
               )}>
                 ${premium.toFixed(2)}
@@ -901,9 +894,9 @@ export const OptionCalculator = () => {
             </CardContent>
           </Card>
           
-          <Card className="grecian-blur dark:shadow-lg">
+          <Card className="grecian-blur">
             <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="text-base sm:text-lg">Greeks</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-semibold text-foreground">Greeks</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 sm:space-y-3">
@@ -915,7 +908,7 @@ export const OptionCalculator = () => {
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-2 cursor-help">
                               <span className="text-xs sm:text-sm font-medium capitalize">{key}</span>
-                              <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground hover:text-groww-blue transition-colors duration-200" />
+                              <Info className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground hover:text-primary transition-colors duration-200" />
                             </div>
                           </TooltipTrigger>
                           <TooltipContent side={isMobile ? "top" : "right"} className="animate-scale">
@@ -941,9 +934,9 @@ export const OptionCalculator = () => {
       </div>
 
       {/* Payoff Diagram Section - Full Width */}
-      <Card className="grecian-blur dark:shadow-lg w-full">
+      <Card className="grecian-blur w-full">
         <CardHeader className="pb-2 sm:pb-3">
-          <CardTitle className="text-base sm:text-lg">Payoff Diagram</CardTitle>
+          <CardTitle className="text-base sm:text-lg font-semibold text-foreground">Payoff Diagram</CardTitle>
         </CardHeader>
         <CardContent className="p-2 sm:p-4">
           <div className="w-full aspect-[4/3] sm:aspect-[16/9] lg:aspect-[2/1] rounded-lg overflow-hidden">
