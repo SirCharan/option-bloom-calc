@@ -158,6 +158,14 @@ export const OptionCalculator = () => {
     console.log('Asset changed to:', selectedAsset);
     if (selectedAsset !== "SELECT") {
       fetchAssetPrice(selectedAsset);
+      if (!useDVOL) {
+        // Set default IV to 100 for assets other than BTC and ETH
+        if (selectedAsset !== 'BTC' && selectedAsset !== 'ETH') {
+          setVolatility(100);
+        } else {
+          setVolatility(0);
+        }
+      }
     }
   }, [selectedAsset]);
   
@@ -558,15 +566,22 @@ export const OptionCalculator = () => {
                     <Input
                       id="volatility"
                       type="number"
-                      step="0.01"
-                      min="0.01"
-                      value={volatility.toFixed(2)}
-                      onChange={(e) => 
-                        handleNumericInput(e.target.value, setVolatility, 0.01)
-                      }
+                      step="any"
+                      value={volatility || ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          setVolatility(100);
+                        } else {
+                          const parsed = parseFloat(value);
+                          if (!isNaN(parsed)) {
+                            setVolatility(parsed);
+                          }
+                        }
+                      }}
                       disabled={useDVOL}
                       className={cn(
-                        "text-sm sm:text-base transition-all duration-200 hover:border-groww-blue focus:border-groww-blue",
+                        "text-sm sm:text-base transition-all duration-200 hover:border-primary focus:border-primary",
                         useDVOL && "opacity-50"
                       )}
                     />
