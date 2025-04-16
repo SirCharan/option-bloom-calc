@@ -395,7 +395,10 @@ export const OptionCalculator = () => {
         
         <div className="flex items-center gap-2 text-xs sm:text-sm">
           <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-primary animate-pulse-slow" />
-          <span className="text-muted-foreground">Powered by Black-Scholes, Built for Humans</span>
+          <div className="flex flex-col">
+            <span className="text-muted-foreground">Powered by Black-Scholes</span>
+            <span className="text-muted-foreground">Built for humans</span>
+          </div>
         </div>
       </div>
       
