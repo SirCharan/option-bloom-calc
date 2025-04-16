@@ -90,7 +90,8 @@
   }
 
   body {
-    @apply bg-groww-lightBg text-groww-text;
+    @apply bg-groww-lightBg text-groww-text dark:bg-groww-darkBg dark:text-groww-darkText;
+    @apply transition-colors duration-200;
   }
 
   input[type="number"]::-webkit-inner-spin-button,
@@ -110,11 +111,11 @@
   }
   
   .option-label {
-    @apply text-sm font-medium text-groww-text;
+    @apply text-sm font-medium text-groww-text dark:text-groww-darkText;
   }
   
   .option-result-card {
-    @apply p-4 rounded-lg bg-white border border-groww-border shadow-sm;
+    @apply p-4 rounded-lg bg-white border border-groww-border shadow-sm dark:bg-groww-darkCard dark:border-groww-darkBorder transition-all duration-200;
   }
   
   .option-tab {
@@ -126,6 +127,16 @@
   }
   
   .option-tab:not(.active) {
-    @apply hover:bg-slate-100;
+    @apply hover:bg-slate-100 dark:hover:bg-slate-800;
+  }
+
+  .grecian-blur {
+    @apply relative;
+  }
+
+  .grecian-blur::before {
+    content: '';
+    @apply absolute -inset-1 rounded-xl bg-gradient-light dark:bg-gradient-dark blur-md opacity-70 transition-all duration-200;
+    z-index: -1;
   }
 }

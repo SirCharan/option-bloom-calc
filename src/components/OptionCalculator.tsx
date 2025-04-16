@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { Calculator, Clock, Calendar, Info } from "lucide-react";
+import { Calculator, Clock, Calendar, Info, Sparkles } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,8 +35,19 @@ import {
   durationToTimeToExpiry,
 } from "@/utils/blackScholes";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
+
+const greekDescriptions = {
+  delta: "Change in option price for a $1 change in the underlying price.",
+  gamma: "Rate of change of Delta with respect to the underlying price.",
+  theta: "Change in option price per day passing (time decay).",
+  vega: "Change in option price for a 1% change in volatility.",
+  rho: "Change in option price for a 1% change in interest rate."
+};
 
 export const OptionCalculator = () => {
+  const isMobile = useIsMobile();
+  
   // Form state
   const [spotPrice, setSpotPrice] = useState<number>(100);
   const [strikePrice, setStrikePrice] = useState<number>(100);
@@ -68,6 +79,9 @@ export const OptionCalculator = () => {
     vega: 0,
     rho: 0
   });
+  
+  // Animation states
+  const [animatePremium, setAnimatePremium] = useState(false);
   
   // Handle calculations
   useEffect(() => {
@@ -117,9 +131,17 @@ export const OptionCalculator = () => {
         optionType === "call"
       );
       
+      // Trigger animation effect
+      setAnimatePremium(true);
+      
       // Update state with calculation results
       setPremium(optionPremium);
       setGreeks(optionGreeks);
+      
+      // Reset animation state after animation completes
+      setTimeout(() => {
+        setAnimatePremium(false);
+      }, 300);
     } catch (error) {
       console.error("Calculation error:", error);
       toast.error("Error calculating option values. Please check your inputs.");
@@ -164,17 +186,24 @@ export const OptionCalculator = () => {
   
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-in">
-      <div className="flex items-center gap-2 mb-6">
-        <Calculator className="h-6 w-6 text-groww-blue" />
-        <h1 className="text-2xl font-bold">Options Premium Calculator</h1>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-2">
+          <Calculator className="h-6 w-6 text-groww-blue" />
+          <h1 className="text-xl sm:text-2xl font-bold">Options Premium Calculator</h1>
+        </div>
+        
+        <div className="flex items-center gap-2 text-sm">
+          <Sparkles className="h-4 w-4 text-groww-blue animate-pulse-slow" />
+          <span className="text-muted-foreground">Powered by Black-Scholes</span>
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
         {/* Input Section */}
-        <div className="col-span-1 md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Option Parameters</CardTitle>
+        <div className="col-span-1 md:col-span-2 space-y-4 md:space-y-6">
+          <Card className="grecian-blur dark:shadow-lg">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-base sm:text-lg">Option Parameters</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -192,7 +221,7 @@ export const OptionCalculator = () => {
                     onChange={(e) => 
                       handleNumericInput(e.target.value, setSpotPrice, 0.01)
                     }
-                    className="text-sm"
+                    className="text-sm transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
                   />
                 </div>
                 
@@ -210,7 +239,7 @@ export const OptionCalculator = () => {
                     onChange={(e) => 
                       handleNumericInput(e.target.value, setStrikePrice, 0.01)
                     }
-                    className="text-sm"
+                    className="text-sm transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
                   />
                 </div>
                 
@@ -227,13 +256,19 @@ export const OptionCalculator = () => {
                   >
                     <ToggleGroupItem 
                       value="call" 
-                      className={optionType === "call" ? "bg-groww-blue text-white" : ""}
+                      className={cn(
+                        "transition-all duration-200",
+                        optionType === "call" ? "bg-groww-blue text-white animate-scale" : ""
+                      )}
                     >
                       Call
                     </ToggleGroupItem>
                     <ToggleGroupItem 
                       value="put"
-                      className={optionType === "put" ? "bg-groww-blue text-white" : ""}
+                      className={cn(
+                        "transition-all duration-200",
+                        optionType === "put" ? "bg-groww-blue text-white animate-scale" : ""
+                      )}
                     >
                       Put
                     </ToggleGroupItem>
@@ -249,9 +284,9 @@ export const OptionCalculator = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-groww-blue transition-colors duration-200" />
                         </TooltipTrigger>
-                        <TooltipContent>
+                        <TooltipContent className="animate-scale">
                           <p className="max-w-xs text-xs">
                             Implied volatility represents the expected volatility of the underlying asset.
                             Typically ranges from 10% to 100% for most assets.
@@ -269,7 +304,7 @@ export const OptionCalculator = () => {
                     onChange={(e) => 
                       handleNumericInput(e.target.value, setVolatility, 0.1)
                     }
-                    className="text-sm"
+                    className="text-sm transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
                   />
                 </div>
                 
@@ -282,9 +317,9 @@ export const OptionCalculator = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-groww-blue transition-colors duration-200" />
                         </TooltipTrigger>
-                        <TooltipContent>
+                        <TooltipContent className="animate-scale">
                           <p className="max-w-xs text-xs">
                             The risk-free interest rate, typically based on government bond yields.
                             Usually between 1% and 10%.
@@ -302,7 +337,7 @@ export const OptionCalculator = () => {
                     onChange={(e) => 
                       handleNumericInput(e.target.value, setRiskFreeRate)
                     }
-                    className="text-sm"
+                    className="text-sm transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
                   />
                 </div>
               </div>
@@ -310,9 +345,9 @@ export const OptionCalculator = () => {
           </Card>
           
           {/* Time to Expiry Section */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Time to Expiry</CardTitle>
+          <Card className="grecian-blur dark:shadow-lg">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-base sm:text-lg">Time to Expiry</CardTitle>
             </CardHeader>
             <CardContent>
               <Tabs
@@ -321,17 +356,17 @@ export const OptionCalculator = () => {
                 onValueChange={(value) => setTimeMethod(value as "date" | "duration")}
               >
                 <TabsList className="mb-4">
-                  <TabsTrigger value="date" className="flex items-center gap-1.5">
+                  <TabsTrigger value="date" className="flex items-center gap-1.5 transition-all duration-200">
                     <Calendar className="h-4 w-4" />
                     <span>Expiry Date</span>
                   </TabsTrigger>
-                  <TabsTrigger value="duration" className="flex items-center gap-1.5">
+                  <TabsTrigger value="duration" className="flex items-center gap-1.5 transition-all duration-200">
                     <Clock className="h-4 w-4" />
                     <span>Duration</span>
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="date" className="mt-0">
+                <TabsContent value="date" className="mt-0 animate-fade-in">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
                       <Label htmlFor="expiryDate" className="option-label">
@@ -342,7 +377,7 @@ export const OptionCalculator = () => {
                           <PopoverTrigger asChild>
                             <Button
                               variant="outline"
-                              className="w-full justify-start text-left font-normal"
+                              className="w-full justify-start text-left font-normal transition-all duration-200 hover:border-groww-blue"
                             >
                               <Calendar className="mr-2 h-4 w-4" />
                               {expiryDate ? (
@@ -352,14 +387,14 @@ export const OptionCalculator = () => {
                               )}
                             </Button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
+                          <PopoverContent className="w-auto p-0 animate-scale" align="start">
                             <CalendarComponent
                               mode="single"
                               selected={expiryDate}
                               onSelect={(date) => date && setExpiryDate(date)}
                               initialFocus
                               disabled={(date) => date < new Date()}
-                              className={cn("p-3 pointer-events-auto")}
+                              className={cn("p-3")}
                             />
                           </PopoverContent>
                         </Popover>
@@ -373,10 +408,10 @@ export const OptionCalculator = () => {
                           value={expiryHour}
                           onValueChange={setExpiryHour}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="transition-all duration-200 hover:border-groww-blue">
                             <SelectValue placeholder="Hour" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="animate-scale">
                             {hourOptions.map((hour) => (
                               <SelectItem key={hour} value={hour}>
                                 {hour}
@@ -389,10 +424,10 @@ export const OptionCalculator = () => {
                           value={expiryMinute}
                           onValueChange={setExpiryMinute}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="transition-all duration-200 hover:border-groww-blue">
                             <SelectValue placeholder="Min" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="animate-scale">
                             {minuteOptions.map((minute) => (
                               <SelectItem key={minute} value={minute}>
                                 {minute}
@@ -405,7 +440,7 @@ export const OptionCalculator = () => {
                   </div>
                 </TabsContent>
                 
-                <TabsContent value="duration" className="mt-0">
+                <TabsContent value="duration" className="mt-0 animate-fade-in">
                   <div className="grid grid-cols-3 gap-3">
                     <div className="option-input-group">
                       <Label htmlFor="hours" className="option-label">
@@ -419,7 +454,7 @@ export const OptionCalculator = () => {
                         onChange={(e) => 
                           handleNumericInput(e.target.value, setHours)
                         }
-                        className="text-sm"
+                        className="text-sm transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
                       />
                     </div>
                     
@@ -436,7 +471,7 @@ export const OptionCalculator = () => {
                         onChange={(e) => 
                           handleNumericInput(e.target.value, setMinutes)
                         }
-                        className="text-sm"
+                        className="text-sm transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
                       />
                     </div>
                     
@@ -453,7 +488,7 @@ export const OptionCalculator = () => {
                         onChange={(e) => 
                           handleNumericInput(e.target.value, setSeconds)
                         }
-                        className="text-sm"
+                        className="text-sm transition-all duration-200 hover:border-groww-blue focus:border-groww-blue"
                       />
                     </div>
                   </div>
@@ -465,12 +500,15 @@ export const OptionCalculator = () => {
         
         {/* Results Section */}
         <div className="col-span-1 space-y-4">
-          <Card className="bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Option Premium</CardTitle>
+          <Card className="grecian-blur dark:shadow-lg">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-base sm:text-lg">Option Premium</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-groww-blue">
+              <div className={cn(
+                "text-2xl sm:text-3xl font-bold text-groww-blue transition-all duration-200",
+                animatePremium && "animate-scale"
+              )}>
                 ${premium.toFixed(2)}
               </div>
               <p className="text-sm text-muted-foreground mt-1">
@@ -479,106 +517,37 @@ export const OptionCalculator = () => {
             </CardContent>
           </Card>
           
-          <Card className="bg-white">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Greeks</CardTitle>
+          <Card className="grecian-blur dark:shadow-lg">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-base sm:text-lg">Greeks</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-medium">Delta</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs text-xs">
-                            Change in option price for a $1 change in the underlying asset price.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                {Object.entries(greeks).map(([key, value]) => (
+                  <div key={key} className="flex justify-between items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-medium capitalize">{key}</span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-groww-blue transition-colors duration-200 cursor-pointer" />
+                          </TooltipTrigger>
+                          <TooltipContent side={isMobile ? "top" : "right"} className="animate-scale">
+                            <p className="max-w-xs text-xs">
+                              {greekDescriptions[key as keyof typeof greekDescriptions]}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <span className={cn(
+                      "font-medium transition-all duration-200",
+                      animatePremium && "animate-scale"
+                    )}>
+                      {value.toFixed(4)}
+                    </span>
                   </div>
-                  <span className="font-medium">{greeks.delta.toFixed(4)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-medium">Gamma</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs text-xs">
-                            Rate of change of Delta with respect to the underlying price.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <span className="font-medium">{greeks.gamma.toFixed(4)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-medium">Theta</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs text-xs">
-                            Change in option price per day passing (time decay).
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <span className="font-medium">{greeks.theta.toFixed(4)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-medium">Vega</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs text-xs">
-                            Change in option price for a 1% change in volatility.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <span className="font-medium">{greeks.vega.toFixed(4)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-medium">Rho</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs text-xs">
-                            Change in option price for a 1% change in interest rate.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <span className="font-medium">{greeks.rho.toFixed(4)}</span>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>
