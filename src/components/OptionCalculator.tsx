@@ -463,7 +463,7 @@ export const OptionCalculator = () => {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-4 sm:mb-6">
         <div className="flex items-center gap-2">
           <Calculator className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-          <h1 className="text-lg sm:text-2xl font-bold text-foreground">Options Premium Calculator</h1>
+          <h1 className="text-lg sm:text-2xl font-bold text-foreground">Options Calculator</h1>
         </div>
         
         <div className="flex items-center gap-2 text-xs sm:text-sm">
