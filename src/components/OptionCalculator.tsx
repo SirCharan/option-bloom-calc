@@ -37,6 +37,7 @@ import { greekDescriptions } from "@/utils/greekDescriptions";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PayoffGraph } from './PayoffGraph';
+import { track } from '@vercel/analytics';
 
 interface DVOLResponse {
   volatility: number;
@@ -284,6 +285,63 @@ export const OptionCalculator = () => {
     };
   }, [selectedAsset, useDVOL]);
   
+  // Track asset selection
+  const handleAssetSelection = (value: typeof selectedAsset) => {
+    setSelectedAsset(value);
+    if (value !== "SELECT") {
+      track('asset_selected', { asset: value });
+      // Reset DVOL and set default volatility for non-BTC/ETH assets
+      if (value !== 'BTC' && value !== 'ETH') {
+        setUseDVOL(false);
+        setVolatility(100);
+      }
+      fetchAssetPrice(value);
+    }
+  };
+
+  // Track option type changes
+  const handleOptionTypeChange = (value: "call" | "put") => {
+    setOptionType(value);
+    track('option_type_changed', { type: value });
+  };
+
+  // Track time method changes
+  const handleTimeMethodChange = (value: "date" | "duration") => {
+    setTimeMethod(value as "date" | "duration");
+    track('time_method_changed', { method: value });
+  };
+
+  // Track quick time selections
+  const handleQuickTimeSelect = (duration: string) => {
+    track('quick_time_selected', { duration });
+    
+    const date = new Date();
+    switch (duration) {
+      case '1h':
+        date.setHours(date.getHours() + 1);
+        break;
+      case '1d':
+        date.setDate(date.getDate() + 1);
+        break;
+      case '1w':
+        date.setDate(date.getDate() + 7);
+        break;
+      case '1m':
+        date.setMonth(date.getMonth() + 1);
+        break;
+      case '3m':
+        date.setMonth(date.getMonth() + 3);
+        break;
+      case '1y':
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+    }
+    setExpiryDate(date);
+    setExpiryHour(date.getHours().toString().padStart(2, "0"));
+    setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
+    setTimeMethod("date");
+  };
+
   // Handle calculations
   useEffect(() => {
     try {
@@ -343,6 +401,21 @@ export const OptionCalculator = () => {
       setTimeout(() => {
         setAnimatePremium(false);
       }, 300);
+
+      // Track premium calculations
+      if (
+        spotPrice > 0 &&
+        strikePrice > 0 &&
+        volatility > 0 &&
+        timeToExpiry > 0
+      ) {
+        track('premium_calculated', {
+          asset: selectedAsset,
+          option_type: optionType,
+          time_method: timeMethod,
+          premium_percentage: (optionPremium / spotPrice * 100).toFixed(2)
+        });
+      }
     } catch (error) {
       console.error("Calculation error:", error);
       toast.error("Error calculating option values. Please check your inputs.");
@@ -418,7 +491,7 @@ export const OptionCalculator = () => {
                   </Label>
                   <Select
                     value={selectedAsset}
-                    onValueChange={(value) => setSelectedAsset(value as typeof selectedAsset)}
+                    onValueChange={handleAssetSelection}
                   >
                     <SelectTrigger className="transition-all duration-200 hover:border-primary text-sm sm:text-base">
                       <SelectValue placeholder="Select asset" />
@@ -480,9 +553,7 @@ export const OptionCalculator = () => {
                   <ToggleGroup
                     type="single"
                     value={optionType}
-                    onValueChange={(value) => 
-                      value && setOptionType(value as "call" | "put")
-                    }
+                    onValueChange={(value) => value && handleOptionTypeChange(value as "call" | "put")}
                     className="justify-start"
                   >
                     <ToggleGroupItem 
@@ -565,23 +636,26 @@ export const OptionCalculator = () => {
                       id="volatility"
                       type="number"
                       step="any"
-                      value={volatility}
+                      max="1000"
+                      value={volatility || ''}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === '' || isNaN(parseFloat(value))) {
-                          setVolatility(100);
+                        if (value === '') {
+                          setVolatility(0);
                         } else {
                           const parsed = parseFloat(value);
-                          setVolatility(parsed);
+                          if (!isNaN(parsed) && parsed <= 1000) {
+                            setVolatility(parsed);
+                          }
                         }
                       }}
-                      disabled={useDVOL}
+                      disabled={useDVOL && (selectedAsset === 'BTC' || selectedAsset === 'ETH')}
                       className={cn(
                         "text-sm sm:text-base transition-all duration-200 hover:border-primary focus:border-primary",
-                        useDVOL && "opacity-50"
+                        useDVOL && (selectedAsset === 'BTC' || selectedAsset === 'ETH') && "opacity-50"
                       )}
                     />
-                    {useDVOL && (
+                    {useDVOL && (selectedAsset === 'BTC' || selectedAsset === 'ETH') && (
                       <div className="text-xs text-muted-foreground flex items-center gap-2">
                         <span>DVOL:</span>
                         {getDVOLDisplay()}
@@ -638,14 +712,7 @@ export const OptionCalculator = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      const date = new Date();
-                      date.setHours(date.getHours() + 1);
-                      setExpiryDate(date);
-                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
-                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
-                      setTimeMethod("date");
-                    }}
+                    onClick={() => handleQuickTimeSelect('1h')}
                     className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Hour
@@ -653,14 +720,7 @@ export const OptionCalculator = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      const date = new Date();
-                      date.setDate(date.getDate() + 1);
-                      setExpiryDate(date);
-                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
-                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
-                      setTimeMethod("date");
-                    }}
+                    onClick={() => handleQuickTimeSelect('1d')}
                     className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Day
@@ -668,14 +728,7 @@ export const OptionCalculator = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      const date = new Date();
-                      date.setDate(date.getDate() + 7);
-                      setExpiryDate(date);
-                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
-                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
-                      setTimeMethod("date");
-                    }}
+                    onClick={() => handleQuickTimeSelect('1w')}
                     className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Week
@@ -683,14 +736,7 @@ export const OptionCalculator = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      const date = new Date();
-                      date.setMonth(date.getMonth() + 1);
-                      setExpiryDate(date);
-                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
-                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
-                      setTimeMethod("date");
-                    }}
+                    onClick={() => handleQuickTimeSelect('1m')}
                     className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Month
@@ -698,14 +744,7 @@ export const OptionCalculator = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      const date = new Date();
-                      date.setMonth(date.getMonth() + 3);
-                      setExpiryDate(date);
-                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
-                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
-                      setTimeMethod("date");
-                    }}
+                    onClick={() => handleQuickTimeSelect('3m')}
                     className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     3 Months
@@ -713,14 +752,7 @@ export const OptionCalculator = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => {
-                      const date = new Date();
-                      date.setFullYear(date.getFullYear() + 1);
-                      setExpiryDate(date);
-                      setExpiryHour(date.getHours().toString().padStart(2, "0"));
-                      setExpiryMinute(date.getMinutes().toString().padStart(2, "0"));
-                      setTimeMethod("date");
-                    }}
+                    onClick={() => handleQuickTimeSelect('1y')}
                     className="transition-all duration-200 hover:border-primary text-xs sm:text-sm"
                   >
                     1 Year
@@ -730,7 +762,7 @@ export const OptionCalculator = () => {
               <Tabs
                 defaultValue="date"
                 value={timeMethod}
-                onValueChange={(value) => setTimeMethod(value as "date" | "duration")}
+                onValueChange={handleTimeMethodChange}
               >
                 <TabsList className="mb-4">
                   <TabsTrigger value="date" className="flex items-center gap-1.5 transition-all duration-200 text-xs sm:text-sm">
